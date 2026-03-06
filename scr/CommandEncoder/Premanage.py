@@ -381,4 +381,4 @@ class Premanage:
 
 if __name__ == "__main__":
     Premanage.enabledebug = True
-    print(Premanage.match("往右两米，往前2米"))
+    print(Premanage.match("前进两米，然后下降100米"))
