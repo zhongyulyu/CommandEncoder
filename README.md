@@ -1,0 +1,2 @@
+# CommandEncoder
+encode command

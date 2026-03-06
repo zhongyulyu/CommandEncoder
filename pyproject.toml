@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CommandEncoder"
+version = "0.1.0"
+description = "AI 命令编码器"
+readme = "README.md"
+authors = [{ name = "lyu", email = "zhongyulyu666@gmail.com" }]
+license = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = [
+    "openai>=1.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.urls]
+Repository = "https://github.com/你的用户名/CommandEncoder"
+
+[tool.setuptools]
+packages = ["CommandEncoder"]
+package-dir = { "CommandEncoder" = "src/CommandEncoder" }
