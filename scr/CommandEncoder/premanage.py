@@ -7,13 +7,12 @@ from mapping import Mapping
 
 class Premanage:
     mov_direction_map = Mapping({
-        # 基本方向
         ('前', '前进', '向前', '往前'): np.array([1, 0, 0]),
         ('后', '后退', '向后', '往后'): np.array([-1, 0, 0]),
         ('左', '向左', '往左', '左移'): np.array([0, -1, 0]),
         ('右', '向右', '往右', '右移'): np.array([0, 1, 0]),
         
-        # 斜向
+        
         ('左前', '左前方', '左前向', 'front left', '往左前', '向左前'): 
             np.array([-0.7071, 0.7071, 0]),
         ('右前', '右前方', '右前向', 'front right', '往右前', '向右前'): 
@@ -23,7 +22,7 @@ class Premanage:
         ('右后', '右后方', '右后向', 'back right', '往右后', '向右后'): 
             np.array([0.7071, -0.7071, 0]),
         
-        # 垂直方向
+        
         ('上', '向上', '上升', 'up', 'upward'): np.array([0, 0, 1]),
         ('下', '向下', '下降', 'down', 'downward'): np.array([0, 0, -1]),
     })
@@ -31,6 +30,70 @@ class Premanage:
     unit_map = Mapping({
         ('厘米', '公分', 'cm', 'centimeter'): 0.01,
         ('米', '公尺', 'm', 'meter'): 1.0,
+    })
+
+    chinese_mapping = {
+        "digits": Mapping({
+            ("零", "〇"): 0,
+            ("一", "壹", "幺"): 1,
+            ("二", "贰", "两"): 2,
+            ("三", "叁"): 3,
+            ("四", "肆"): 4,
+            ("五", "伍"): 5,
+            ("六", "陆"): 6,
+            ("七", "柒"): 7,
+            ("八", "捌"): 8,
+            ("九", "玖"): 9,
+            ("洞",): 0,
+            ("幺",): 1,  
+            ("拐",): 7,
+            ("勾",): 9,
+        }),
+        "units": Mapping({
+            ("十", "拾"): 10,
+            ("百", "佰"): 100,
+            ("千", "仟"): 1000,
+            ("万", "萬"): 10000,
+            ("亿", "億"): 100000000,
+            ("兆",): 1000000000000,
+        }),
+        "special": Mapping({
+            ("半", "一半"): 0.5,
+            ("廿",): 20,
+            ("卅",): 30,
+            ("卌",): 40,
+            ("对", "双"): 2,
+        }),
+        "separators": Mapping({
+            ("点", "."): ".",  
+        })
+    }
+
+    chinese_basic_mapping = Mapping({
+        ("零", "〇"): 0,
+        ("一", "壹", "幺"): 1,
+        ("二", "贰", "两"): 2,
+        ("三", "叁"): 3,
+        ("四", "肆"): 4,
+        ("五", "伍"): 5,
+        ("六", "陆"): 6,
+        ("七", "柒"): 7,
+        ("八", "捌"): 8,
+        ("九", "玖"): 9,
+        ("洞",): 0,
+        ("幺",): 1,  
+        ("拐",): 7,
+        ("勾",): 9,
+        ("十",): 10,
+        ("十一",): 11,
+        ("十二",): 12,
+        ("十三",): 13,
+        ("十四",): 14,
+        ("十五",): 15,
+        ("十六",): 16,
+        ("十七",): 17,
+        ("十八",): 18,
+        ("十九",): 19,
     })
 
     enabledebug = False
@@ -54,7 +117,7 @@ class Premanage:
             按照匹配顺序返回结果
         """
         
-        # 1. 生成所有可能的模式组合
+        
         all_patterns = []
         
         def generate_combinations(current_pattern, depth, current_indices):
@@ -74,7 +137,7 @@ class Premanage:
         
         generate_combinations("", 0, [])
         
-        # 2. 按匹配优先级排序
+        
         def get_pattern_priority(indices):
             """
             计算模式优先级：
@@ -82,7 +145,6 @@ class Premanage:
             2. 特殊标记少的优先
             3. 在列表前面的优先匹配更具体的模式
             """
-            # 计算普通文本的总长度
             normal_text_len = 0
             special_count = 0
             
@@ -91,22 +153,17 @@ class Premanage:
                     special_count += 1
                 else:
                     normal_text_len += len(pattern)
-            
-            # 优先普通文本长的，其次特殊标记少的
             return (-normal_text_len, special_count, indices)
         
         all_patterns.sort(key=lambda x: get_pattern_priority(x[1]))
         
-        # 3. 尝试匹配
         for pattern_str, indices in all_patterns:
-            # 构建正则表达式
             regex_parts = []
             
             for depth, idx, pattern in indices:
                 if pattern == '%f':
                     regex_parts.append(r'([零一二三四五六七八九十百千万亿两0-9]+(?:\.[0-9]+)?)')
                 elif pattern == '%s':
-                    # 匹配任意字符串（包括空字符串），非贪婪
                     regex_parts.append(r'(.*?)')
                 elif pattern == '%k':
                     regex_parts.append(r'([^\w\s]+)')
@@ -115,23 +172,18 @@ class Premanage:
             
             regex_pattern = '^' + ''.join(regex_parts) + '$'
             
-            # 尝试匹配
             match = re.match(regex_pattern, cmd)
             if match:
                 matched_groups = match.groups()
-                
-                # 收集结果
                 result = []
                 group_idx = 0
                 
                 for depth, idx, pattern in indices:
                     if pattern in ['%f', '%s', '%k']:
-                        # 特殊标记，添加匹配的字符串
                         if group_idx < len(matched_groups):
                             result.append(matched_groups[group_idx] or '')
                             group_idx += 1
                     else:
-                        # 普通模式，添加索引
                         result.append(idx)
                 
                 return tuple(result)
@@ -170,7 +222,6 @@ class Premanage:
         if Premanage.enabledebug:
             Debug.Log(f"movematch 收到命令: '{command}'", timestamp=True, caller_info=True)
         
-        # 清理输入，转为小写
         cmd = command.strip().lower()
         
         if Premanage.enabledebug:
@@ -209,7 +260,6 @@ class Premanage:
         if Premanage.enabledebug:
             Debug.Log(f"rotatematch 收到命令: '{command}'", timestamp=True, caller_info=True)
         
-        # TODO: 实现旋转指令匹配
         pass
 
     @staticmethod
@@ -250,23 +300,8 @@ class Premanage:
             Optional[float]: 解析后的浮点数，解析失败返回None
         """
 
-        basic_mapping = {
-            "零": 0, "〇": 0,
-            "一": 1, "壹": 1, "幺": 1,
-            "二": 2, "贰": 2, "两": 2,
-            "三": 3, "叁": 3,
-            "四": 4, "肆": 4,
-            "五": 5, "伍": 5,
-            "六": 6, "陆": 6,
-            "七": 7, "柒": 7,
-            "八": 8, "捌": 8,
-            "九": 9, "玖": 9,
-            "洞": 0, "幺": 1, "拐": 7, "勾": 9,
-            "十": 10, "十一": 11, "十二": 12, "十三": 13, "十四": 14, "十五": 15, "十六": 16, "十七": 17, "十八": 18, "十九": 19
-        }
-
         try:
-            return basic_mapping[num_str]
+            return Premanage.chinese_basic_mapping[num_str]
         except KeyError:
             pass
 
@@ -274,39 +309,6 @@ class Premanage:
             if Premanage.enabledebug:
                 Debug.Log(f"_tryParseChineseInt 解析中文数字: '{num_str}'", timestamp=True, caller_info=True)
         
-        chinese_mapping = {
-            "digits": {  # 基本数字
-                "零": 0, "〇": 0,
-                "一": 1, "壹": 1, "幺": 1,
-                "二": 2, "贰": 2, "两": 2,
-                "三": 3, "叁": 3,
-                "四": 4, "肆": 4,
-                "五": 5, "伍": 5,
-                "六": 6, "陆": 6,
-                "七": 7, "柒": 7,
-                "八": 8, "捌": 8,
-                "九": 9, "玖": 9,
-                "洞": 0, "幺": 1, "拐": 7, "勾": 9,
-            },
-            "units": {  # 位数单位
-                "十": 10, "拾": 10,
-                "百": 100, "佰": 100,
-                "千": 1000, "仟": 1000,
-                "万": 10000, "萬": 10000,
-                "亿": 100000000, "億": 100000000,
-                "兆": 1000000000000,
-            },
-            "special": {  # 特殊数字
-                "半": 0.5, "一半": 0.5,
-                "廿": 20,  # 二十
-                "卅": 30,  # 三十
-                "卌": 40,  # 四十
-                "对": 2, "双": 2,
-            },
-            "separators": {  # 分隔符
-                "点": ".",
-            }
-        }
         
         try:
             decimals = 0
@@ -321,7 +323,7 @@ class Premanage:
             if (len(splited) == 2):
                 for i, c in enumerate(splited[1]):
                     try:
-                        decimals += chinese_mapping["digits"][c] * (10 ** -(i+1))
+                        decimals += Premanage.chinese_mapping["digits"][c] * (10 ** -(i+1))
                     except KeyError:
                         
                         if Premanage.enabledebug:
@@ -335,20 +337,20 @@ class Premanage:
                 raise ValueError("cannot decode value greater than 10000")
             
             try:
-                inte = basic_mapping[splited[0]]
+                inte = Premanage.chinese_basic_mapping[splited[0]]
             except KeyError:
                 for c in splited[0]:
-                    if (c in chinese_mapping["digits"].keys()):
+                    if (c in Premanage.chinese_mapping["digits"].keys()):
                         flat += c
                 
-                if (splited[0][-1] in chinese_mapping["digits"]):
-                    unit = chinese_mapping["units"][splited[0][-2]] / 10
+                if (splited[0][-1] in Premanage.chinese_mapping["digits"]):
+                    unit = Premanage.chinese_mapping["units"][splited[0][-2]] / 10
                 else:
-                    unit = chinese_mapping["units"][splited[0][-1]]
+                    unit = Premanage.chinese_mapping["units"][splited[0][-1]]
                 
                 inte = 0.0
                 for i, c in enumerate(flat[::-1]):
-                    inte += chinese_mapping["digits"][c] * (10 ** i)
+                    inte += Premanage.chinese_mapping["digits"][c] * (10 ** i)
                 
                 inte *= unit
             finally:
@@ -375,4 +377,4 @@ class Premanage:
 
 if __name__ == "__main__":
     Premanage.enabledebug = True
-    print(Premanage.match("前进两米，然后下降100米"))
+    print(Premanage.match("前进两米，然后下降100米，最后上升1000米"))
