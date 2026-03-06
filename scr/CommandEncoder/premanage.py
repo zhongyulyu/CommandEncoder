@@ -2,42 +2,36 @@ import re
 import numpy as np
 from typing import Optional, Tuple
 from Debug.Debug import Debug
+from mapping import Mapping
 
 
 class Premanage:
-    mov_direction_map = {
-        '前': np.array([1,  0, 0]), '前进': np.array([1,  0, 0]), '向前': np.array([1,  0, 0]), '往前': np.array([1,  0, 0]),
-        '后': np.array([-1,  0, 0]), '后退': np.array([-1,  0, 0]), '向后': np.array([-1,  0, 0]), '往后': np.array([-1,  0, 0]),
-        '左': np.array([0,  -1, 0]), '向左': np.array([0,  -1, 0]), '往左': np.array([0,  -1, 0]), '左移': np.array([0,  -1, 0]),
-        '右': np.array([0,  1, 0]), '向右': np.array([0,  1, 0]), '往右': np.array([0,  1, 0]), '右移': np.array([0,  1, 0]),
+    mov_direction_map = Mapping({
+        # 基本方向
+        ('前', '前进', '向前', '往前'): np.array([1, 0, 0]),
+        ('后', '后退', '向后', '往后'): np.array([-1, 0, 0]),
+        ('左', '向左', '往左', '左移'): np.array([0, -1, 0]),
+        ('右', '向右', '往右', '右移'): np.array([0, 1, 0]),
         
-        '左前': np.array([-0.7071, 0.7071, 0]), '左前方': np.array([-0.7071, 0.7071, 0]), 
-        '左前向': np.array([-0.7071, 0.7071, 0]), 'front left': np.array([-0.7071, 0.7071, 0]),
-        '右前': np.array([0.7071, 0.7071, 0]), '右前方': np.array([0.7071, 0.7071, 0]), 
-        '右前向': np.array([0.7071, 0.7071, 0]), 'front right': np.array([0.7071, 0.7071, 0]),
-        '左后': np.array([-0.7071, -0.7071, 0]), '左后方': np.array([-0.7071, -0.7071, 0]), 
-        '左后向': np.array([-0.7071, -0.7071, 0]), 'back left': np.array([-0.7071, -0.7071, 0]),
-        '右后': np.array([0.7071, -0.7071, 0]), '右后方': np.array([0.7071, -0.7071, 0]), 
-        '右后向': np.array([0.7071, -0.7071, 0]), 'back right': np.array([0.7071, -0.7071, 0]),
+        # 斜向
+        ('左前', '左前方', '左前向', 'front left', '往左前', '向左前'): 
+            np.array([-0.7071, 0.7071, 0]),
+        ('右前', '右前方', '右前向', 'front right', '往右前', '向右前'): 
+            np.array([0.7071, 0.7071, 0]),
+        ('左后', '左后方', '左后向', 'back left', '往左后', '向左后'): 
+            np.array([-0.7071, -0.7071, 0]),
+        ('右后', '右后方', '右后向', 'back right', '往右后', '向右后'): 
+            np.array([0.7071, -0.7071, 0]),
+        
+        # 垂直方向
+        ('上', '向上', '上升', 'up', 'upward'): np.array([0, 0, 1]),
+        ('下', '向下', '下降', 'down', 'downward'): np.array([0, 0, -1]),
+    })
 
-        '往左前': np.array([-0.7071, 0.7071, 0]),
-        '往右前': np.array([0.7071, 0.7071, 0]),
-        '往左后': np.array([-0.7071, -0.7071, 0]),
-        '往右后': np.array([0.7071, -0.7071, 0]),
-
-        '向左前': np.array([-0.7071, 0.7071, 0]),
-        '向右前': np.array([0.7071, 0.7071, 0]),
-        '向左后': np.array([-0.7071, -0.7071, 0]),
-        '向右后': np.array([0.7071, -0.7071, 0]),
-
-        '上': np.array([0, 0 , 1]), '向上': np.array([0, 0 , 1]), '上升': np.array([0, 0 , 1]), 'up': np.array([0, 0 , 1]), 'upward': np.array([0, 0 , 1]),
-        '下': np.array([0, 0 , -1]), '向下': np.array([0, 0 , -1]), '下降': np.array([0, 0 , -1]), 'down': np.array([0, 0 , -1]), 'downward': np.array([0, 0 , -1]),
-    }
-
-    unit_map = {
-        '厘米': 0.01, '公分': 0.01, 'cm': 0.01, "centimeter": 0.01,
-        '米': 1.0, '公尺': 1.0, 'm': 1.0, "meter": 1.0,
-    }
+    unit_map = Mapping({
+        ('厘米', '公分', 'cm', 'centimeter'): 0.01,
+        ('米', '公尺', 'm', 'meter'): 1.0,
+    })
 
     enabledebug = False
     
