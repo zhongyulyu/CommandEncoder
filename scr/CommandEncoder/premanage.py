@@ -7,7 +7,7 @@ from action import *
 
 
 class Premanage:
-    mov_direction_map = Mapping({
+    MOV_DIRECTION_MAP = Mapping({
         ('前', '前进', '向前', '往前'): Offset([1, 0, 0]),
         ('后', '后退', '向后', '往后'): Offset([-1, 0, 0]),
         ('左', '向左', '往左', '左移'): Offset([0, -1, 0]),
@@ -26,28 +26,45 @@ class Premanage:
         
         ('上', '向上', '上升', 'up', 'upward'): Offset([0, 0, 1]),
         ('下', '向下', '下降', 'down', 'downward'): Offset([0, 0, -1]),
-        ('复位', '回中',):Setabs([0,0,0])
     })
 
-    rot_direction_map = Mapping({
+    ROT_DIRECTION_MAP = Mapping({
         ('向左旋转', '左转'): Offset([0,0, 1]),
         ('向右旋转', '右转'): Offset([0,0,-1]),
-        ('复位', '回中'):  Setabs([0,0,0]),
 
         ('抬起','往上旋转','向上旋转'): Offset([0, 1,0]),
         ('放下','往下旋转','向下旋转'): Offset([0,-1,0]),
 
         ('逆时针旋转'): Offset([ 1,0,0]),
-        ('顺时针旋转'): Offset([-1,0,0])
+        ('顺时针旋转'): Offset([-1,0,0]),
     })
 
-    distance_unit_map = Mapping({
+    MOV_DIRECTION_DEFULT = Mapping({
+        ('前进'): Offset([ 1,0,0]),
+        ('后退'): Offset([-1,0,0]),
+
+        ('复位', '回中',):Setabs([0,0,0])
+    })
+
+    ROT_DIRECTION_DEFULT = Mapping({
+        ('左转'): Offset([0,0, np.pi / 2]),
+        ('右转'): Offset([0,0,-np.pi / 2]),
+        ('抬起'): Offset([0, np.pi / 2,0]),
+        ('放下'): Offset([0,-np.pi / 2,0]),
+        ('复位', '回中'):  Setabs([0,0,0]),
+    })
+
+    DISTANCE_UNIT_MAP = Mapping({
         ('厘米', '公分', 'cm', 'centimeter'): 0.01,
         ('米', '公尺', 'm', 'meter'): 1.0,
-        ('步'): 0.5,
+        ('步', '点'): 0.5,
     })
 
-    chinese_mapping = {
+    ANGLE_UNIT_MAP = Mapping({
+        ('度'): np.pi / 180
+    })
+
+    CHINESE_MAPPING = {
         "digits": Mapping({
             ("零", "〇"): 0,
             ("一", "壹", "幺"): 1,
@@ -84,7 +101,7 @@ class Premanage:
         })
     }
 
-    chinese_basic_mapping = Mapping({
+    CHINESE_BASIC_MAPPING = Mapping({
         ("零", "〇"): 0,
         ("一", "壹", "幺"): 1,
         ("二", "贰", "两"): 2,
@@ -211,27 +228,55 @@ class Premanage:
         
         splited = re.split(r'[，。；,]', cmd)
         
-        result = {}
+        result = {
+            'pos':{
+                'offset':Offset([0,0,0]),
+                'absolute':Setabs([0,0,0]),
+            },
+            'rot':{
+                'offset':Offset([0,0,0]),
+                'absolute':Setabs([0,0,0]),
+            },
+            'encoded':[]
+        }
         encoded = []
         mov_sum = Offset([0,0,0])
+        rot_sum = Offset([0,0,0])
         for s in splited:
-            match = Premanage.movematch(s)
-            mov = match[0]
-            print(type(mov))
-            print(mov)
-            encoded += match[1] + [';']
-            Debug.Log(s)
+            raw_result = Premanage.match_single(s)
+            mov = raw_result[0]
+            rot = raw_result[1]
+
             mov_sum = mov_sum + mov
-            if isinstance(mov, Setabs):
-                result['absmove'] = mov
-        
-        result['offset'] = mov_sum
-        
-        result['encoded'] = encoded
             
-        
+            rot_sum = rot_sum + rot
+            
+            if isinstance(mov, Setabs):
+                result['pos']['absolute'] = mov
+            if isinstance(rot, Setabs):
+                result['rot']['absolute'] = rot
+            encoded = raw_result[-1]
+
+            result['encoded'].append(encoded)
+
+            
+        result['pos']['offset'] = mov_sum
+        result['rot']['offset'] = rot_sum
+
         return result
     
+    @staticmethod
+    def match_single(cmd: str):
+        movmatch = Premanage.movematch(cmd)
+        mov = movmatch[0]
+
+        rotmatch = Premanage.rotatematch(cmd)
+        rot = rotmatch[0]
+        if Premanage.enabledebug:
+            Debug.Log(cmd)
+
+        return (mov, rot, (movmatch[1], rotmatch[1]))
+
     @staticmethod
     def movematch(command: str) -> Offset:
         """
@@ -253,8 +298,8 @@ class Premanage:
         if Premanage.enabledebug:
             Debug.Log(f"处理后命令: '{cmd}'", timestamp=True, caller_info=False)
 
-        dir_key = list(Premanage.mov_direction_map.keys())
-        unit_key = list(Premanage.distance_unit_map.keys())
+        dir_key = list(Premanage.MOV_DIRECTION_MAP.keys())
+        unit_key = list(Premanage.DISTANCE_UNIT_MAP.keys())
 
         raw_result = Premanage.match_pattern(cmd, ['%s'], dir_key, ['%s'], ['%f'], unit_key, ['%s'])
         if Premanage.enabledebug:
@@ -262,21 +307,22 @@ class Premanage:
 
         if not raw_result:
             try:
-                raw_result = Premanage.match_pattern(cmd, ['%s'], dir_key, ['%s'])
+                defult_keys = list(Premanage.MOV_DIRECTION_DEFULT.keys())
+                raw_result = Premanage.match_pattern(cmd, ['%s'], defult_keys, ['%s'])
                 assert raw_result
-                dir_str = dir_key[raw_result[1]]
+                dir_str = defult_keys[raw_result[1]]
                 
                 encoded = [raw_result[0], dir_str, raw_result[2]]
-                return (Premanage.mov_direction_map[dir_str], encoded)
+                return (Premanage.MOV_DIRECTION_DEFULT[dir_str], encoded)
             except AssertionError:
-                return (Offset([0,0,0]), [cmd])
+                return (Offset([0,0,0]), [])
 
                 
         dir_str = dir_key[raw_result[1]]
         unit_str = unit_key[raw_result[4]]
 
-        dir_vec = Premanage.mov_direction_map[dir_str]
-        unit = Premanage.distance_unit_map[unit_str]
+        dir_vec = Premanage.MOV_DIRECTION_MAP[dir_str]
+        unit = Premanage.DISTANCE_UNIT_MAP[unit_str]
         distance = Premanage.parseInt(raw_result[3])
         
         encoded = [raw_result[0], dir_str, raw_result[2], distance, unit_str, raw_result[5]]
@@ -297,7 +343,37 @@ class Premanage:
         if Premanage.enabledebug:
             Debug.Log(f"rotatematch 收到命令: '{command}'", timestamp=True, caller_info=True)
         
-        pass
+        cmd = command.strip().lower()
+        
+        if Premanage.enabledebug:
+            Debug.Log(f"处理后命令: '{cmd}'", timestamp=True, caller_info=False)
+        
+        dir_keys = list(Premanage.ROT_DIRECTION_MAP.keys())
+        unit_keys = list(Premanage.ANGLE_UNIT_MAP.keys())
+        raw_result = Premanage.match_pattern(cmd, ['%s'], dir_keys, ['%s'], ['%f'], unit_keys, ['%s'])
+
+        if not raw_result:
+            try:
+                defult_keys = list(Premanage.ROT_DIRECTION_DEFULT.keys())
+                raw_result = Premanage.match_pattern(cmd, ['%s'], defult_keys, ['%s'])
+                assert raw_result
+                dir_str = defult_keys[raw_result[1]]
+                
+                encoded = [raw_result[0], dir_str, raw_result[2]]
+                return (Premanage.ROT_DIRECTION_DEFULT[dir_str], encoded)
+            except AssertionError:
+                return (Offset([0,0,0]), [])
+
+        dir_str = dir_keys[raw_result[1]]
+        unit_str = unit_keys[raw_result[4]]
+
+        dir = Premanage.ROT_DIRECTION_MAP[dir_str]
+        amount = Premanage.parseInt(raw_result[3])
+        unit = Premanage.ANGLE_UNIT_MAP[unit_str]
+
+        return dir * amount * unit
+        
+        
 
     @staticmethod
     def parseInt(num_str: str) -> float:
@@ -338,7 +414,7 @@ class Premanage:
         """
 
         try:
-            return Premanage.chinese_basic_mapping[num_str]
+            return Premanage.CHINESE_BASIC_MAPPING[num_str]
         except KeyError:
             pass
 
@@ -360,7 +436,7 @@ class Premanage:
             if (len(splited) == 2):
                 for i, c in enumerate(splited[1]):
                     try:
-                        decimals += Premanage.chinese_mapping["digits"][c] * (10 ** -(i+1))
+                        decimals += Premanage.CHINESE_MAPPING["digits"][c] * (10 ** -(i+1))
                     except KeyError:
                         
                         if Premanage.enabledebug:
@@ -374,20 +450,20 @@ class Premanage:
                 raise ValueError("cannot decode value greater than 10000")
             
             try:
-                inte = Premanage.chinese_basic_mapping[splited[0]]
+                inte = Premanage.CHINESE_BASIC_MAPPING[splited[0]]
             except KeyError:
                 for c in splited[0]:
-                    if (c in Premanage.chinese_mapping["digits"].keys()):
+                    if (c in Premanage.CHINESE_MAPPING["digits"].keys()):
                         flat += c
                 
-                if (splited[0][-1] in Premanage.chinese_mapping["digits"]):
-                    unit = Premanage.chinese_mapping["units"][splited[0][-2]] / 10
+                if (splited[0][-1] in Premanage.CHINESE_MAPPING["digits"]):
+                    unit = Premanage.CHINESE_MAPPING["units"][splited[0][-2]] / 10
                 else:
-                    unit = Premanage.chinese_mapping["units"][splited[0][-1]]
+                    unit = Premanage.CHINESE_MAPPING["units"][splited[0][-1]]
                 
                 inte = 0.0
                 for i, c in enumerate(flat[::-1]):
-                    inte += Premanage.chinese_mapping["digits"][c] * (10 ** i)
+                    inte += Premanage.CHINESE_MAPPING["digits"][c] * (10 ** i)
                 
                 inte *= unit
             finally:
@@ -414,4 +490,4 @@ class Premanage:
             
 if __name__ == "__main__":
     Premanage.enabledebug = True
-    print(Premanage.match("先往前走两步，然后复位，最后后退两步"))
+    print(Premanage.match("往前一点，然后右转"))

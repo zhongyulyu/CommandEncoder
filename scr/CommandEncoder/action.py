@@ -62,10 +62,10 @@ class Vector3(np.ndarray):
     
     # 特殊方法
     def __str__(self) -> str:
-        return f"Vector3({self.x:.3f}, {self.y:.3f}, {self.z:.3f})"
+        return f"[{self.x:.3f}, {self.y:.3f}, {self.z:.3f}]"
     
     def __repr__(self) -> str:
-        return f"Vector3([{self.x}, {self.y}, {self.z}])"
+        return f"[{self.x}, {self.y}, {self.z}]"
     
     # 运算重载
     def __add__(self, other: 'Vector3') -> 'Vector3':
@@ -120,10 +120,6 @@ class Offset(Vector3):
             return Offset(Vector3.zero())
     def __mul__(self, scalar: float):
         return Offset(super().__mul__(scalar))
-    def __str__(self):
-        return f"[{self.x}, {self.y}, {self.z}]"
-    def __repr__(self):
-        return f"[{self.x}, {self.y}, {self.z}]"
         
 
 class Setabs(Vector3):
@@ -142,12 +138,9 @@ class Setabs(Vector3):
     def __mul__(self, scalar: float):
         return Setabs(super().__mul__(scalar))
     
-    def __str__(self):
-        return f"abs pos: [{self.x}, {self.y}, {self.z}]"
-    def __repr__(self):
-        return f"abs pos: [{self.x}, {self.y}, {self.z}]"
 
 if __name__ == '__main__':
-    a = Offset([0,1,1])
-    b = Setabs([0,1,0])
-    print(a+b)
+    a = Offset([.5,0,0])
+    b = Offset([0,0,0])
+    b += a
+    print(b)
