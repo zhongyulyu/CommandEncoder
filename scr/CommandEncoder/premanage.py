@@ -3,33 +3,48 @@ import numpy as np
 from typing import Optional, Tuple
 from Debug.Debug import Debug
 from mapping import Mapping
+from action import *
 
 
 class Premanage:
     mov_direction_map = Mapping({
-        ('前', '前进', '向前', '往前'): np.array([1, 0, 0]),
-        ('后', '后退', '向后', '往后'): np.array([-1, 0, 0]),
-        ('左', '向左', '往左', '左移'): np.array([0, -1, 0]),
-        ('右', '向右', '往右', '右移'): np.array([0, 1, 0]),
+        ('前', '前进', '向前', '往前'): Offset([1, 0, 0]),
+        ('后', '后退', '向后', '往后'): Offset([-1, 0, 0]),
+        ('左', '向左', '往左', '左移'): Offset([0, -1, 0]),
+        ('右', '向右', '往右', '右移'): Offset([0, 1, 0]),
         
         
         ('左前', '左前方', '左前向', 'front left', '往左前', '向左前'): 
-            np.array([-0.7071, 0.7071, 0]),
+            Offset([-0.7071, 0.7071, 0]),
         ('右前', '右前方', '右前向', 'front right', '往右前', '向右前'): 
-            np.array([0.7071, 0.7071, 0]),
+            Offset([0.7071, 0.7071, 0]),
         ('左后', '左后方', '左后向', 'back left', '往左后', '向左后'): 
-            np.array([-0.7071, -0.7071, 0]),
+            Offset([-0.7071, -0.7071, 0]),
         ('右后', '右后方', '右后向', 'back right', '往右后', '向右后'): 
-            np.array([0.7071, -0.7071, 0]),
+            Offset([0.7071, -0.7071, 0]),
         
         
-        ('上', '向上', '上升', 'up', 'upward'): np.array([0, 0, 1]),
-        ('下', '向下', '下降', 'down', 'downward'): np.array([0, 0, -1]),
+        ('上', '向上', '上升', 'up', 'upward'): Offset([0, 0, 1]),
+        ('下', '向下', '下降', 'down', 'downward'): Offset([0, 0, -1]),
+        ('复位', '回中',):Setabs([0,0,0])
     })
 
-    unit_map = Mapping({
+    rot_direction_map = Mapping({
+        ('向左旋转', '左转'): Offset([0,0, 1]),
+        ('向右旋转', '右转'): Offset([0,0,-1]),
+        ('复位', '回中'):  Setabs([0,0,0]),
+
+        ('抬起','往上旋转','向上旋转'): Offset([0, 1,0]),
+        ('放下','往下旋转','向下旋转'): Offset([0,-1,0]),
+
+        ('逆时针旋转'): Offset([ 1,0,0]),
+        ('顺时针旋转'): Offset([-1,0,0])
+    })
+
+    distance_unit_map = Mapping({
         ('厘米', '公分', 'cm', 'centimeter'): 0.01,
         ('米', '公尺', 'm', 'meter'): 1.0,
+        ('步'): 0.5,
     })
 
     chinese_mapping = {
@@ -197,17 +212,28 @@ class Premanage:
         splited = re.split(r'[，。；,]', cmd)
         
         result = {}
-        mov_sum = np.array([0,0,0])
+        encoded = []
+        mov_sum = Offset([0,0,0])
         for s in splited:
-            mov = Premanage.movematch(s)
+            match = Premanage.movematch(s)
+            mov = match[0]
+            print(type(mov))
+            print(mov)
+            encoded += match[1] + [';']
             Debug.Log(s)
-            mov_sum = mov + mov_sum
+            mov_sum = mov_sum + mov
+            if isinstance(mov, Setabs):
+                result['absmove'] = mov
+        
+        result['offset'] = mov_sum
+        
+        result['encoded'] = encoded
             
         
-        return mov_sum
+        return result
     
     @staticmethod
-    def movematch(command: str) -> np.array:
+    def movematch(command: str) -> Offset:
         """
         match single move command
         return (x m,y m,z m)
@@ -216,7 +242,7 @@ class Premanage:
             command: cmd
             
         Returns:
-            np.array: numpy array
+            Offset: numpy array
         """
         
         if Premanage.enabledebug:
@@ -228,22 +254,33 @@ class Premanage:
             Debug.Log(f"处理后命令: '{cmd}'", timestamp=True, caller_info=False)
 
         dir_key = list(Premanage.mov_direction_map.keys())
-        unit_key = list(Premanage.unit_map.keys())
+        unit_key = list(Premanage.distance_unit_map.keys())
 
         raw_result = Premanage.match_pattern(cmd, ['%s'], dir_key, ['%s'], ['%f'], unit_key, ['%s'])
         if Premanage.enabledebug:
             Debug.LogVariable(raw_result=raw_result)
 
         if not raw_result:
-            return np.array([0,0,0])
+            try:
+                raw_result = Premanage.match_pattern(cmd, ['%s'], dir_key, ['%s'])
+                assert raw_result
+                dir_str = dir_key[raw_result[1]]
+                
+                encoded = [raw_result[0], dir_str, raw_result[2]]
+                return (Premanage.mov_direction_map[dir_str], encoded)
+            except AssertionError:
+                return (Offset([0,0,0]), [cmd])
+
+                
         dir_str = dir_key[raw_result[1]]
         unit_str = unit_key[raw_result[4]]
 
         dir_vec = Premanage.mov_direction_map[dir_str]
-        unit = Premanage.unit_map[unit_str]
+        unit = Premanage.distance_unit_map[unit_str]
         distance = Premanage.parseInt(raw_result[3])
-
-        return dir_vec * distance * unit
+        
+        encoded = [raw_result[0], dir_str, raw_result[2], distance, unit_str, raw_result[5]]
+        return (dir_vec * distance * unit, encoded)
 
 
 
@@ -374,7 +411,7 @@ class Premanage:
             if Premanage.enabledebug:
                 Debug.LogException(e, f"解析中文数字时: '{num_str}'")
             return None
-
+            
 if __name__ == "__main__":
     Premanage.enabledebug = True
-    print(Premanage.match("前进两米，然后下降100米，最后上升1000米"))
+    print(Premanage.match("先往前走两步，然后复位，最后后退两步"))

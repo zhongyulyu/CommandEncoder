@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/你的用户名/CommandEncoder"
+Repository = "https://github.com/zhongyulyu/CommandEncoder"
 
 [tool.setuptools]
 packages = ["CommandEncoder"]
