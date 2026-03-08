@@ -197,6 +197,7 @@
   **参数**:
   - `iterable`: 可迭代对象
   **数据结构**:
+    python
     {
       'pos': {
       'offset': Offset, # 相对位置偏移
