@@ -1,9 +1,24 @@
 import re
 import numpy as np
 from typing import Optional, Tuple
-from Debug.Debug import Debug
-from mapping import Mapping
-from action import *
+
+try:
+    from CommandEncoder.mapping import Mapping
+    from CommandEncoder.action import *
+except ImportError:
+    # 开发时回退
+    import sys
+    sys.path.append('/home/imstop/Python/PythonProjects/CommandEncoder/src')
+    from CommandEncoder.mapping import Mapping
+    from CommandEncoder.action import *
+
+# Debug 需要特殊处理
+try:
+    from Debug.Debug import Debug
+except ImportError:
+    import sys
+    sys.path.append('/home/imstop/Python/PythonProjects/CommandEncoder/src')
+    from Debug.Debug import Debug
 
 
 class Premanage:

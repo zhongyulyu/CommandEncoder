@@ -7,17 +7,22 @@ name = "CommandEncoder"
 version = "0.1.0"
 description = "AI 命令编码器"
 readme = "README.md"
-authors = [{ name = "lyu", email = "zhongyulyu666@gmail.com" }]
-license = { text = "MIT" }
+authors = [{ name = "lyu", email = "zhongyu.lyu@icloud.com" }]
+license = "MIT"  # 改为字符串格式，不要用 table
 requires-python = ">=3.8"
 dependencies = [
-    "openai>=1.0.0",
     "numpy>=1.24.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4.0", "black>=23.0.0", "flake8>=6.0.0"]
+test = ["pytest>=7.4.0", "pytest-cov>=4.0.0"]
 
 [project.urls]
 Repository = "https://github.com/zhongyulyu/CommandEncoder"
 
 [tool.setuptools]
 packages = ["CommandEncoder"]
-package-dir = { "CommandEncoder" = "src/CommandEncoder" }
+package-dir = { "CommandEncoder" = "src/CommandEncoder" }  # 确保路径正确
