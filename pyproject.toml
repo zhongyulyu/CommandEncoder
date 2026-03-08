@@ -24,5 +24,5 @@ test = ["pytest>=7.4.0", "pytest-cov>=4.0.0"]
 Repository = "https://github.com/zhongyulyu/CommandEncoder"
 
 [tool.setuptools]
-packages = ["CommandEncoder"]
-package-dir = { "CommandEncoder" = "src/CommandEncoder" }  # 确保路径正确
+packages = ["commandencoder"]
+package-dir = { "commandencoder" = "src/commandencoder" }  # 确保路径正确

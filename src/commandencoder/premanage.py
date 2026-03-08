@@ -3,14 +3,14 @@ import numpy as np
 from typing import Optional, Tuple
 
 try:
-    from CommandEncoder.mapping import Mapping
-    from CommandEncoder.action import *
+    from commandencoder.mapping import Mapping
+    from commandencoder.action import *
 except ImportError:
     # 开发时回退
     import sys
     sys.path.append('/home/imstop/Python/PythonProjects/CommandEncoder/src')
-    from CommandEncoder.mapping import Mapping
-    from CommandEncoder.action import *
+    from commandencoder.mapping import Mapping
+    from commandencoder.action import *
 
 # Debug 需要特殊处理
 try:
