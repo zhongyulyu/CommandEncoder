@@ -228,7 +228,21 @@ class Premanage:
         
         splited = re.split(r'[，。；,]', cmd)
         
-        result = {
+        result = Actions([])
+        encoded = []
+        for s in splited:
+            result_sing = Premanage.match_single(s)
+            result.append(result_sing[0])
+
+            encoded_sing = result_sing[-1]
+            encoded.append(encoded_sing)
+
+
+        return (result, encoded)
+    
+    @staticmethod
+    def match_single(cmd: str):
+        result = SingleAction({
             'pos':{
                 'offset':Offset([0,0,0]),
                 'absolute':Setabs([0,0,0]),
@@ -237,45 +251,31 @@ class Premanage:
                 'offset':Offset([0,0,0]),
                 'absolute':Setabs([0,0,0]),
             },
-            'encoded':[]
-        }
-        encoded = []
-        mov_sum = Offset([0,0,0])
-        rot_sum = Offset([0,0,0])
-        for s in splited:
-            raw_result = Premanage.match_single(s)
-            mov = raw_result[0]
-            rot = raw_result[1]
+        })
 
-            mov_sum = mov_sum + mov
-            
-            rot_sum = rot_sum + rot
-            
-            if isinstance(mov, Setabs):
-                result['pos']['absolute'] = mov
-            if isinstance(rot, Setabs):
-                result['rot']['absolute'] = rot
-            encoded = raw_result[-1]
-
-            result['encoded'].append(encoded)
-
-            
-        result['pos']['offset'] = mov_sum
-        result['rot']['offset'] = rot_sum
-
-        return result
-    
-    @staticmethod
-    def match_single(cmd: str):
         movmatch = Premanage.movematch(cmd)
         mov = movmatch[0]
 
         rotmatch = Premanage.rotatematch(cmd)
         rot = rotmatch[0]
+        
+        
+        
+        if isinstance(mov, Setabs):
+            result['pos']['absolute'] = mov
+        else:
+            result['pos']['offset'] = mov
+        
+        if isinstance(rot, Setabs):
+            result['rot']['absolute'] = rot
+        else:
+            result['rot']['offset'] = rot
+
         if Premanage.enabledebug:
             Debug.Log(cmd)
-
-        return (mov, rot, (movmatch[1], rotmatch[1]))
+            Debug.Log('匹配中……')
+            Debug.Log('\n'+str(result))
+        return (result, (movmatch[1], rotmatch[1]))
 
     @staticmethod
     def movematch(command: str) -> Offset:
@@ -327,11 +327,6 @@ class Premanage:
         
         encoded = [raw_result[0], dir_str, raw_result[2], distance, unit_str, raw_result[5]]
         return (dir_vec * distance * unit, encoded)
-
-
-
-
-        
     
     @staticmethod
     def rotatematch(command: str):

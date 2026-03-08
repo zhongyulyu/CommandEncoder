@@ -137,10 +137,43 @@ class Setabs(Vector3):
 
     def __mul__(self, scalar: float):
         return Setabs(super().__mul__(scalar))
+
+class SingleAction(dict):
+    def __init__(self, iterable):
+
+        super().__init__(iterable)
+    
+    def __repr__(self):
+        s = f"pos offset: {self['pos']['offset']},\n" \
+            f"pos absolute: {self['pos']['absolute']},\n\n" \
+            f"rot offset: {self['rot']['offset']},\n" \
+            f"rot absolute: {self['rot']['absolute']},"
+        return s
+    def __str__(self):
+        return self.__repr__()
+
+class Actions(list[SingleAction]):
+    def __init__(self, iterable):
+        super().__init__(iterable)
+
+    def __repr__(self):
+        p = '\n' + '=' * 80 + '\n'
+        return p.join(str(item) for item in self)
+    
+    def __str__(self):
+        return self.__repr__()
     
 
 if __name__ == '__main__':
-    a = Offset([.5,0,0])
-    b = Offset([0,0,0])
-    b += a
+    a = SingleAction({
+            'pos':{
+                'offset':Offset([0,0,0]),
+                'absolute':Setabs([0,0,0]),
+            },
+            'rot':{
+                'offset':Offset([0,0,0]),
+                'absolute':Setabs([0,0,0]),
+            },
+        })
+    b = Actions([a,a,a])
     print(b)
